@@ -157,14 +157,31 @@ def get_available_times_from_line(line: str):
     return time_slots
             
 
-if __name__ == '__main__':
-    input_str = '''
+def test_times():
+    ryan_times = '''
 7:30 pm-9pm, 10pm-12am
 5am
 5
 7pm-9pm
 10A.M'''
-    time_slots = get_available_times_from_line(input_str)
-    time1 = Time(5,30)
-    time2 = Time(5,30)
-    print(time1 == time2)
+
+    ben_times = '''
+7pm    
+'''
+    ryan_slots = get_available_times_from_line(ryan_times)
+    ben_slots = get_available_times_from_line(ben_times)
+    for ryan_slot in ryan_slots:
+        for ben_slot in ben_slots:
+            # Compare start times for instance
+            ryan_start = ryan_slot.start_time
+            ben_start = ben_slot.start_time
+            print('--Ryan Start: {}, Ben Start: {}'.format(ryan_start, ben_start))
+            time_compare = 'earlier than'
+            if ryan_start == ben_start:
+                time_compare = 'at the same time as'
+            elif ryan_start > ben_start:
+                time_compare = 'later than'
+            print('Ryan can start {} Ben'.format(time_compare))
+
+if __name__ == '__main__':
+    test_times()
