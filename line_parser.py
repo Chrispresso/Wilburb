@@ -18,12 +18,12 @@ am_format_regex = re.compile(r'am|a\.m|a\.m\.', re.I)
 pm_format_regex = re.compile(r'pm|p\.m|p\.m\.', re.I)
 
 class Time():
-    def __init__(self, hours: int, minutes: int):
-        self.hours = hours
-        self.minutes = minutes
+    def __init__(self, hour: int, minute: int):
+        self.hour = hour
+        self.minute = minute
 
     def __str__(self):
-        return '{}:{}'.format(str(self.hours).rjust(2, '0'), str(self.minutes).ljust(2, '0'))
+        return '{}:{}'.format(str(self.hour).rjust(2, '0'), str(self.minute).ljust(2, '0'))
 
 class TimeSlot():
     def __init__(self, start_time: Time, end_time: Optional[Time] = None):
@@ -53,39 +53,6 @@ def get_24_hour_format(hour: Union[int, str], indicator: str):
     
     return hour % 24
 
-def convert_to_time_slot(available_time: str):
-    """
-    Helper function to convert a given available time to a useful TimeSlot object.
-    Examples of available_time:
-        7:30 pm-9pm, 10pm-12am
-5am
-5
-7pm-9pm
-10A.M
-    """
-
-def parse_potential_time_slot(available_time: str) -> Optional[Tuple[str]]:
-    """
-    Helper function to convert a given available time to a tuple
-    Examples of available_time:
-        7:30 pm-9pm would return ('7:30', 'pm', '9', 'pm')
-        10pm-12am   would return ('10', 'pm', '12', 'am')
-        5am         would return ('5', 'am', '', '')  
-        5           would return ('5', '', '', '')     
-        7-9pm       would return ('7', '', '9', 'pm')  
-        10pm-12     would return ('10', 'pm', '12', '')
-"""
-    match = available_time_regex(available_time)
-    if match:
-        start_time = match.group('start_time')
-        end_time = match.group('end_time')
-        start_indicator = match.group('SI') or ''
-        end_indicator = match.group('EI')  or ''
-
-        return (start_time, start_indicator, end_time, end_indicator)
-    else:
-        return None
-
 def get_hours_minutes(time: str) -> Tuple[int, int]:
     minutes = 0
     if ':' in time:
@@ -93,6 +60,27 @@ def get_hours_minutes(time: str) -> Tuple[int, int]:
     else:
         hours = int(time)
     return hours, minutes
+
+#@TODO: Absolutely terrible way to check this. Make this better
+def is_24_hour_format(time_tuple: Tuple[str]) -> bool:
+    """
+    Determines if a given tuple, i.e. ('7', 'pm', '12', 'am') is 
+    in 24 hour format or not
+    """
+    start_hour = get_24_hour_format(get_hours_minutes(time_tuple[0])[0], time_tuple[1])
+    start_indicator = time_tuple[1]
+    end_hour = 5
+    end_indicator = time_tuple[3]
+    if time_tuple[2]:
+        end_hour = get_24_hour_format(get_hours_minutes(time_tuple[2])[0], time_tuple[3])
+
+    # If am or pm is found then it is 12 hour format
+    if am_format_regex.match(start_indicator) or pm_format_regex.match(start_indicator) or\
+       am_format_regex.match(end_indicator) or pm_format_regex.match(end_indicator):
+        return False
+    if start_hour > 12 or end_hour > 12:
+        return True
+    return False
 
 def get_available_times_from_line(line: str):
     time_slots: Set[TimeSlot] = set()
@@ -102,20 +90,18 @@ def get_available_times_from_line(line: str):
     for match in available_time_regex.finditer(line):
         uses_24_hour_format = True
         if match:
+            q.append(match)
             start_time = match.group('start_time')
             end_time = match.group('end_time')
             start_indicator = match.group('SI') or ''
             end_indicator = match.group('EI')  or ''
 
-            # Check to see if it uses 12 hour format
-            if twelve_hour_format_regex.match(start_indicator) or\
-               twelve_hour_format_regex.match(end_indicator):
-                uses_24_hour_format = False
+            t = [start_time, start_indicator, end_time, end_indicator]
+            uses_24_hour_format = is_24_hour_format(t)
 
             temp.append((start_time, start_indicator, end_time, end_indicator, uses_24_hour_format))
 
     for temp_slot in temp:
-        print('---',temp_slot)
         # Grab start_time
         start_hour, start_minute = get_hours_minutes(temp_slot[0])
 
@@ -153,15 +139,8 @@ def get_available_times_from_line(line: str):
             if not temp_slot[1]:
                 start_hour = get_24_hour_format(start_hour, 'pm')
         start_time = Time(start_hour, start_minute)
-        print(start_hour)
-        print(start_time)
-        print(end_time)
-
-
-            
-        
         time_slots.add(TimeSlot(start_time, end_time))
-    
+
     return time_slots
             
 
@@ -173,5 +152,3 @@ if __name__ == '__main__':
 7pm-9pm
 10A.M'''
     time_slots = get_available_times_from_line(input_str)
-    for time_slot in time_slots:
-        print(time_slot)
