@@ -25,6 +25,20 @@ class Time():
     def __str__(self):
         return '{}:{}'.format(str(self.hour).rjust(2, '0'), str(self.minute).ljust(2, '0'))
 
+    def __lt__(self, other: Time) -> bool:
+        if self.hour < other.hour:
+            return True
+        elif self.hour > other.hour:
+            return False
+        else:
+            return self.minute < other.minute
+
+    def __eq__(self, other: Time) -> bool:
+        return self.hour == other.hour and self.minute == other.minute
+
+    def __hash__(self):
+        return hash((self.hour, self.minute))
+
 class TimeSlot():
     def __init__(self, start_time: Time, end_time: Optional[Time] = None):
         self.start_time = start_time
@@ -90,7 +104,6 @@ def get_available_times_from_line(line: str):
     for match in available_time_regex.finditer(line):
         uses_24_hour_format = True
         if match:
-            q.append(match)
             start_time = match.group('start_time')
             end_time = match.group('end_time')
             start_indicator = match.group('SI') or ''
@@ -152,3 +165,6 @@ if __name__ == '__main__':
 7pm-9pm
 10A.M'''
     time_slots = get_available_times_from_line(input_str)
+    time1 = Time(5,30)
+    time2 = Time(5,30)
+    print(time1 == time2)
